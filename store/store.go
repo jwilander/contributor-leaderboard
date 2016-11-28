@@ -41,4 +41,5 @@ type LeaderboardStore interface {
 type LeaderboardEntryStore interface {
 	Save(entry *model.LeaderboardEntry) StoreChannel
 	IncrementPoints(username string, leaderboardId string) StoreChannel
+	GetRankings(leaderboardId string) StoreChannel
 }

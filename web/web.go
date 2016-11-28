@@ -13,11 +13,11 @@ var Templates *template.Template
 
 type HtmlTemplatePage struct {
 	TemplateName string
-	Props        map[string]string
+	Props        map[string]interface{}
 }
 
 func NewHtmlTemplatePage(templateName string, title string) *HtmlTemplatePage {
-	props := make(map[string]string)
+	props := make(map[string]interface{})
 	props["Title"] = title
 	return &HtmlTemplatePage{TemplateName: templateName, Props: props}
 }
@@ -86,8 +86,13 @@ func staticHandler(handler http.Handler) http.Handler {
 func root(w http.ResponseWriter, r *http.Request) {
 	page := NewHtmlTemplatePage("leaderboard", "Leaderboard")
 
-	w.Header().Set("Cache-Control", "no-cache, max-age=31556926, public")
+	if result := <-Srv.Store.LeaderboardEntry().GetRankings(Srv.Leaderboard.Id); result.Err != nil {
+		l4g.Error("Failed to load rankings, err=%v", result.Err.Error())
+	} else {
+		page.Props["Rankings"] = result.Data.([]*model.LeaderboardEntry)
+	}
 
+	w.Header().Set("Cache-Control", "no-cache, max-age=31556926, public")
 	page.Render(w)
 }
 

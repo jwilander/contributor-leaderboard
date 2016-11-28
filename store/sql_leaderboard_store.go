@@ -46,7 +46,7 @@ func (ls SqlLeaderboardStore) Save(leaderboard *model.Leaderboard) StoreChannel 
 			if err := ls.GetMaster().Insert(leaderboard); err != nil {
 				result.Err = errors.New("Error saving leaderboard, leaderboard_id=" + leaderboard.Id + ", " + err.Error())
 			} else {
-				result.Data = &leaderboard
+				result.Data = leaderboard
 			}
 		} else {
 			result.Data = &existing

@@ -8,6 +8,22 @@
             <div class="row content">
                 <div class="col-sm-12">
                     <h1>Leaderboard</h1>
+                    <table class="table">
+                      <thead>
+                        <tr>
+                          <th>Username</th>
+                          <th>Points</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {{ range $index, $value := .Props.Rankings }}
+                        <tr>
+                          <td>{{$value.Username}}</td>
+                          <td>{{$value.Points}}</td>
+                        </tr>
+                        {{ end }}
+                      </tbody>
+                    </table>
                 </div>
                 <div class="footer-push"></div>
             </div>

@@ -77,3 +77,26 @@ func (ls SqlLeaderboardEntryStore) IncrementPoints(username string, leaderboardI
 
 	return storeChannel
 }
+
+func (ls SqlLeaderboardEntryStore) GetRankings(leaderboardId string) StoreChannel {
+
+	storeChannel := make(StoreChannel, 1)
+
+	go func() {
+		result := StoreResult{}
+
+		entries := []*model.LeaderboardEntry{}
+
+		if _, err := ls.GetMaster().Select(&entries, "SELECT * FROM LeaderboardEntry WHERE LeaderboardId = :Id ORDER BY Points DESC", map[string]interface{}{"Id": leaderboardId}); err != nil {
+			result.Err = errors.New("Error getting rankings, leaderboard_id=" + leaderboardId + ", " + err.Error())
+		} else {
+			result.Data = entries
+		}
+
+		storeChannel <- result
+		close(storeChannel)
+
+	}()
+
+	return storeChannel
+}
