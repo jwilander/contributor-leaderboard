@@ -101,6 +101,8 @@ func root(w http.ResponseWriter, r *http.Request) {
 	page.Render(w)
 }
 
+var labeledPRs map[int]bool = map[int]bool{}
+
 func handleEvent(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -119,7 +121,8 @@ func handleEvent(w http.ResponseWriter, r *http.Request) {
 
 	fail := false
 
-	if event.Action == "closed" && event.PullRequest.Merged {
+	if event.Action == "closed" && event.PullRequest.Merged && labeledPRs[event.PullRequest.Id] {
+
 		entry := &model.LeaderboardEntry{
 			LeaderboardId: Srv.Leaderboard.Id,
 			Username:      event.PullRequest.User.Login,
@@ -134,6 +137,8 @@ func handleEvent(w http.ResponseWriter, r *http.Request) {
 			l4g.Error("Unable to update points, err=%v", result.Err.Error())
 			fail = true
 		}
+	} else if event.Action == "labeled" {
+		labeledPRs[event.PullRequest.Id] = true
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -146,13 +151,10 @@ func handleEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func CheckMAC(message, messageMAC, key []byte) bool {
-	l4g.Debug(string(key))
 	mac := hmac.New(sha1.New, key)
 	mac.Write(message)
 	expectedMAC := mac.Sum(nil)
 	expectedSig := "sha1=" + hex.EncodeToString(expectedMAC)
 
-	l4g.Debug(expectedSig)
-	l4g.Debug(string(messageMAC))
 	return hmac.Equal(messageMAC, []byte(expectedSig))
 }

@@ -8,9 +8,11 @@ import (
 type Event struct {
 	Action      string           `json:"action"`
 	PullRequest EventPullRequest `json:"pull_request"`
+	Label       EventLabel       `json:"label"`
 }
 
 type EventPullRequest struct {
+	Id     int       `json:"id"`
 	Merged bool      `json:"merged"`
 	User   EventUser `json:"user"`
 }
@@ -18,6 +20,10 @@ type EventPullRequest struct {
 type EventUser struct {
 	Id    int    `json:"id"`
 	Login string `json:"login"`
+}
+
+type EventLabel struct {
+	Name string `json:"name"`
 }
 
 func (l *Event) ToJson() string {
