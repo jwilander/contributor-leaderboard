@@ -11,14 +11,14 @@
                     <table class="table">
                       <thead>
                         <tr>
-                          <th>Username</th>
-                          <th>Points</th>
+                          <th>GitHub Username</th>
+                          <th>Pull Requests Merged</th>
                         </tr>
                       </thead>
                       <tbody>
                         {{ range $index, $value := .Props.Rankings }}
                         <tr>
-                          <td>{{$value.Username}}</td>
+                          <td><a href="https://github.com/{{$value.Username}}" target="_blank">{{$value.Username}}</a></td>
                           <td>{{$value.Points}}</td>
                         </tr>
                         {{ end }}

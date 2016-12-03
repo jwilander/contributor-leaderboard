@@ -24,6 +24,8 @@ func main() {
 	*config.DatabaseSource = databaseSource
 	config.LeaderboardName = new(string)
 	*config.LeaderboardName = "TestLeaderboard"
+	config.WebhookToken = new(string)
+	*config.WebhookToken = os.Getenv("WEBHOOK_TOKEN")
 
 	web.StartServer(config)
 

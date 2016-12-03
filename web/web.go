@@ -1,7 +1,12 @@
 package web
 
 import (
+	"bytes"
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/hex"
 	"html/template"
+	"io/ioutil"
 	"net/http"
 
 	l4g "github.com/alecthomas/log4go"
@@ -97,9 +102,20 @@ func root(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleEvent(w http.ResponseWriter, r *http.Request) {
-	event := model.EventFromJson(r.Body)
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		l4g.Error("Unable to read request body, err=%v", err.Error())
+		w.Write([]byte("fail"))
+		return
+	}
 
-	l4g.Debug(event.ToJson())
+	if !CheckMAC(body, []byte(r.Header.Get("X-Hub-Signature")), []byte(*Srv.Cfg.WebhookToken)) {
+		l4g.Error("Invalid HMAC signature")
+		w.Write([]byte("fail"))
+		return
+	}
+
+	event := model.EventFromJson(bytes.NewReader(body))
 
 	fail := false
 
@@ -127,4 +143,16 @@ func handleEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write([]byte("ok"))
+}
+
+func CheckMAC(message, messageMAC, key []byte) bool {
+	l4g.Debug(string(key))
+	mac := hmac.New(sha1.New, key)
+	mac.Write(message)
+	expectedMAC := mac.Sum(nil)
+	expectedSig := "sha1=" + hex.EncodeToString(expectedMAC)
+
+	l4g.Debug(expectedSig)
+	l4g.Debug(string(messageMAC))
+	return hmac.Equal(messageMAC, []byte(expectedSig))
 }
