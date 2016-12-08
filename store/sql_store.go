@@ -52,6 +52,7 @@ type SqlStore struct {
 	master           *gorp.DbMap
 	leaderboard      LeaderboardStore
 	leaderboardEntry LeaderboardEntryStore
+	label            LabelStore
 }
 
 func initConnection(connUrl string) *SqlStore {
@@ -68,6 +69,7 @@ func NewSqlStore(connUrl string) Store {
 
 	sqlStore.leaderboard = NewSqlLeaderboardStore(sqlStore)
 	sqlStore.leaderboardEntry = NewSqlLeaderboardEntryStore(sqlStore)
+	sqlStore.label = NewSqlLabelStore(sqlStore)
 
 	err := sqlStore.master.CreateTablesIfNotExists()
 	if err != nil {
@@ -78,6 +80,7 @@ func NewSqlStore(connUrl string) Store {
 
 	sqlStore.leaderboard.(*SqlLeaderboardStore).CreateIndexesIfNotExists()
 	sqlStore.leaderboardEntry.(*SqlLeaderboardEntryStore).CreateIndexesIfNotExists()
+	sqlStore.label.(*SqlLabelStore).CreateIndexesIfNotExists()
 
 	return sqlStore
 }
@@ -245,6 +248,10 @@ func (ss *SqlStore) Leaderboard() LeaderboardStore {
 
 func (ss *SqlStore) LeaderboardEntry() LeaderboardEntryStore {
 	return ss.leaderboardEntry
+}
+
+func (ss *SqlStore) Label() LabelStore {
+	return ss.label
 }
 
 func (ss *SqlStore) DropAllTables() {

@@ -28,6 +28,7 @@ func Must(sc StoreChannel) interface{} {
 type Store interface {
 	Leaderboard() LeaderboardStore
 	LeaderboardEntry() LeaderboardEntryStore
+	Label() LabelStore
 	Close()
 	DropAllTables()
 }
@@ -42,4 +43,10 @@ type LeaderboardEntryStore interface {
 	Save(entry *model.LeaderboardEntry) StoreChannel
 	IncrementPoints(username string, leaderboardId string) StoreChannel
 	GetRankings(leaderboardId string) StoreChannel
+}
+
+type LabelStore interface {
+	Save(label *model.Label) StoreChannel
+	Get(labelId int) StoreChannel
+	Delete(labelId int) StoreChannel
 }

@@ -101,7 +101,24 @@ func root(w http.ResponseWriter, r *http.Request) {
 	page.Render(w)
 }
 
-var labeledPRs map[int]bool = map[int]bool{}
+var exemptedUsers map[string]bool = map[string]bool{
+	"jwilander":        true,
+	"jasonblais":       true,
+	"crspeller":        true,
+	"coreyhulen":       true,
+	"enahum":           true,
+	"hmhealey":         true,
+	"asaadmahmood":     true,
+	"grundleborg":      true,
+	"it33":             true,
+	"lfbrock":          true,
+	"esethna":          true,
+	"hannaparks":       true,
+	"mattermod":        true,
+	"mattermost-build": true,
+	"yang-chen1":       true,
+	"yuya-oc":          true,
+}
 
 func handleEvent(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
@@ -119,9 +136,20 @@ func handleEvent(w http.ResponseWriter, r *http.Request) {
 
 	event := model.EventFromJson(bytes.NewReader(body))
 
-	fail := false
+	w.Header().Set("Content-Type", "text/plain")
 
-	if event.Action == "closed" && event.PullRequest.Merged && labeledPRs[event.PullRequest.Id] {
+	if exemptedUsers[event.PullRequest.User.Login] {
+		l4g.Debug("User %v exempted", event.PullRequest.User.Login)
+		w.Write([]byte("ok"))
+		return
+	}
+
+	if event.Action == "closed" && event.PullRequest.Merged {
+		if result := <-Srv.Store.Label().Get(event.PullRequest.Id); result.Err != nil {
+			l4g.Info("Unable to find label for this PR, did not count pull request err=%v", result.Err.Error())
+			w.Write([]byte("ok"))
+			return
+		}
 
 		entry := &model.LeaderboardEntry{
 			LeaderboardId: Srv.Leaderboard.Id,
@@ -130,23 +158,47 @@ func handleEvent(w http.ResponseWriter, r *http.Request) {
 
 		if result := <-Srv.Store.LeaderboardEntry().Save(entry); result.Err != nil {
 			l4g.Error("Unable to save entry, err=%v", result.Err.Error())
-			fail = true
+			w.Write([]byte("fail"))
+			return
 		}
 
 		if result := <-Srv.Store.LeaderboardEntry().IncrementPoints(entry.Username, entry.LeaderboardId); result.Err != nil {
 			l4g.Error("Unable to update points, err=%v", result.Err.Error())
-			fail = true
+			w.Write([]byte("fail"))
+			return
 		}
-	} else if event.Action == "labeled" {
-		labeledPRs[event.PullRequest.Id] = true
+
+		go func() {
+			if result := <-Srv.Store.Label().Delete(event.PullRequest.Id); result.Err != nil {
+				l4g.Error("Unable to delete label, err=%v", result.Err.Error())
+			}
+		}()
+
+		l4g.Debug("Pull request with id %v merged", event.PullRequest.Id)
+	} else if event.Action == "labeled" && event.Label.Name == "Hackfest" {
+
+		label := &model.Label{
+			Id:   event.PullRequest.Id,
+			Name: event.Label.Name,
+		}
+
+		if result := <-Srv.Store.Label().Save(label); result.Err != nil {
+			l4g.Error("Unable to save label, err=%v", result.Err.Error())
+			w.Write([]byte("fail"))
+			return
+		}
+		l4g.Debug("Label added for pull request id %v", event.PullRequest.Id)
+	} else if event.Action == "unlabeled" && event.Label.Name == "Hackfest" {
+		if result := <-Srv.Store.Label().Delete(event.PullRequest.Id); result.Err != nil {
+			l4g.Error("Unable to delete label, err=%v", result.Err.Error())
+			w.Write([]byte("fail"))
+			return
+		}
+		l4g.Debug("Label removed for pull request id %v", event.PullRequest.Id)
+	} else {
+		l4g.Debug("Unrecognized action '%v'", event.Action)
 	}
 
-	w.Header().Set("Content-Type", "text/plain")
-
-	if fail {
-		w.Write([]byte("fail"))
-		return
-	}
 	w.Write([]byte("ok"))
 }
 

@@ -23,7 +23,7 @@ func main() {
 	config.DatabaseSource = new(string)
 	*config.DatabaseSource = databaseSource
 	config.LeaderboardName = new(string)
-	*config.LeaderboardName = "TestLeaderboard"
+	*config.LeaderboardName = "Holiday Hackfest Leaderboard"
 	config.WebhookToken = new(string)
 	*config.WebhookToken = os.Getenv("WEBHOOK_TOKEN")
 
